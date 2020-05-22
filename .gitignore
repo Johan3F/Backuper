@@ -4,4 +4,4 @@ build/
 dist/
 __*
 
-main.spec
+*.spec
