@@ -73,7 +73,7 @@ def main():
     parser.add_argument('--file_path', type=Path, default=Path(CONFIGURATION_FILE_PATH),
                         help='Path to the file that contains information. The first line of that file, is the destiny folder')
     parser.add_argument('--history_level', type=int, default=10,
-                        help='Number of backups to safe before starting to delete the oldest one')
+                        help='Number of backups to safe before starting to delete the oldest one(s)')
 
     args = parser.parse_args()
 
