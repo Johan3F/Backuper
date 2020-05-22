@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import argparse
 import datetime
@@ -7,7 +8,7 @@ from re import search
 from dirsync import sync
 from pathlib import Path
 
-CONFIGURATION_FILE_PATH = 'conf.txt'
+CONFIGURATION_FILE_PATH = 'conf.json'
 DATETIME_FORMAT = '%Y%m%dT%H%M%S'
 
 
@@ -15,10 +16,20 @@ def retrieve_from_file(file_path: Path):
     '''
     Gets information from the given file, and return an array of strings 
     '''
-    lines = list(file_path.read_text().splitlines())
-    lines = [Path(line) for line in lines]
+    json_file = {}
+    with open(file_path) as raw_file:
+        json_file = json.load(raw_file)
 
-    return lines[0], lines[1:]
+    # Verify that we have everything we need in the configuration file
+    for field in ['output_folder', 'folders_to_backup']:
+        if field not in json_file:
+            raise RuntimeError(
+                '{} is missing from the configuration file'.format(field))
+    output_folder = Path(json_file['output_folder'])
+    folders_to_backup = [Path(folder)
+                         for folder in json_file['folders_to_backup']]
+
+    return output_folder, folders_to_backup
 
 
 def remove_old_backup(output_folder, history_level):
