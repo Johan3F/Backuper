@@ -25,6 +25,7 @@ D
 usage: [-h] [--file_path FILE_PATH] [--history_level HISTORY_LEVEL]
 
 optional arguments:
+
   --file_path FILE_PATH
                         Path to the file that contains information. The first line of that file, is the destiny folder
   --history_level HISTORY_LEVEL
