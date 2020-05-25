@@ -49,6 +49,7 @@ D
 ```
 
 By default, the configuration file will be searched for at the same folder as the executable with name conf.json.
+
 usage: [-h] [--file_path FILE_PATH]
 
 optional arguments:
