@@ -10,9 +10,11 @@ from pathlib import Path
 
 CONFIGURATION_FILE_PATH = 'conf.json'
 DATETIME_FORMAT = '%Y%m%dT%H%M%S'
+ROOT_SUBFOLDER = 'backup_{}'.format(
+    datetime.datetime.now().replace(microsecond=0).strftime(DATETIME_FORMAT))
 
 
-def retrieve_from_file(file_path: Path):
+def retrieve_configuration_from_file(file_path: Path):
     '''
     Gets information from the given file, and return an array of strings 
     '''
@@ -20,21 +22,32 @@ def retrieve_from_file(file_path: Path):
     with open(file_path) as raw_file:
         json_file = json.load(raw_file)
 
-    # Verify that we have everything we need in the configuration file
-    for field in ['output_folder', 'folders_to_backup']:
+    # Verify that we have the mandatory field in the configuration file
+    for field in ['output_folder', 'folders_to_backup', 'history_level']:
         if field not in json_file:
             raise RuntimeError(
                 '{} is missing from the configuration file'.format(field))
     output_folder = Path(json_file['output_folder'])
-    folders_to_backup = [Path(folder)
-                         for folder in json_file['folders_to_backup']]
+    history_level = json_file['history_level']
 
-    return output_folder, folders_to_backup
+    # Build the folders mapping information
+    base_target = output_folder / ROOT_SUBFOLDER
+    folders_to_backup = []
+    for element in json_file['folders_to_backup']:
+        target = base_target / \
+            element['subfolder'] if 'subfolder' in element else base_target
+
+        for path in element['folders']:
+            source = Path(path)
+            folders_to_backup.append(
+                {"source": source, "target": Path(target)})
+
+    return output_folder, history_level, folders_to_backup
 
 
 def remove_old_backup(output_folder, history_level):
     '''
-    Removes the oldes backup stored in the output folder if there are more that history_level
+    Removes the oldest backups stored in the output folder if there are more that history_level
     '''
     # Lists all backups and sort then by creation date
     folder_in_output_folder = sorted(
@@ -49,30 +62,28 @@ def remove_old_backup(output_folder, history_level):
         shutil.rmtree(folder_to_remove)
 
 
-def store_backup(output_folder, folder_to_backup, now):
+def store_backup(folder_to_backup):
     '''
     Stores every folder into the ourput folder, concatenating current date time to keep history
     '''
     for folder in folder_to_backup:
-        sync(folder, output_folder / 'backup_{}'.format(now.strftime(DATETIME_FORMAT)) / folder.stem, 'sync',
+        sync(folder['source'], folder['target'] / folder['source'].stem, 'sync',
              purge=True, create=True, verbose=True)
 
 
-def process(file_path: Path, history_level: int):
+def process(file_path: Path):
     '''
     Retrives data from file, and syncs folders into a new folder with current datetime
     '''
     # Retrieving configuration from file
-    output_folder, folder_to_backup = retrieve_from_file(file_path)
-
-    # Getting current datetime to create a folder with this name to store this backup
-    now = datetime.datetime.now().replace(microsecond=0)
+    output_folder, history_level, folders_to_backup = retrieve_configuration_from_file(
+        file_path)
 
     # Removing the oldest backup in case there are more than history_level
     remove_old_backup(output_folder, history_level)
 
     # Actually storing the backup
-    store_backup(output_folder, folder_to_backup, now)
+    store_backup(folders_to_backup)
 
 
 def main():
@@ -83,12 +94,10 @@ def main():
         description='Synchronizes all folders and files given in a txt file, into the destiny folder')
     parser.add_argument('--file_path', type=Path, default=Path(CONFIGURATION_FILE_PATH),
                         help='Path to the file that contains information. The first line of that file, is the destiny folder')
-    parser.add_argument('--history_level', type=int, default=10,
-                        help='Number of backups to safe before starting to delete the oldest one(s)')
 
     args = parser.parse_args()
 
-    process(args.file_path, args.history_level)
+    process(args.file_path)
 
 
 if __name__ == '__main__':

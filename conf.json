@@ -1,7 +1,26 @@
 {
     "output_folder": "D:\\Temp",
+    "history_level": 3,
     "folders_to_backup": [
-        "D:\\Music\\Alt J",
-        "D:\\Music\\Boikot"
+        {
+            "subfolder": "music",
+            "folders": [
+                "D:\\Music\\Alt J",
+                "D:\\Music\\Boikot"
+            ]
+        },
+        {
+            "subfolder": "images",
+            "folders": [
+                "D:\\Pictures\\yo en el tiempo",
+                "D:\\Pictures\\Webcam"
+            ]
+        },
+        {
+            "folders": [
+                "D:\\Documents\\Gastos",
+                "D:\\Documents\\Arduino"
+            ]
+        }
     ]
 }
