@@ -1,6 +1,8 @@
 import os
+import sys
 import json
 import shutil
+import logging
 import argparse
 import datetime
 
@@ -14,33 +16,57 @@ ROOT_SUBFOLDER = 'backup_{}'.format(
     datetime.datetime.now().replace(microsecond=0).strftime(DATETIME_FORMAT))
 
 
+def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
+    '''
+    Handler for unhandled exceptions that will write to the logs.
+    @StolenFrom: https://www.scrygroup.com/tutorial/2018-02-06/python-excepthook-logging/
+    '''
+    if issubclass(exc_type, KeyboardInterrupt):
+        # call the default excepthook saved at __excepthook__
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.critical("Unhandled exception: ", exc_info=(
+        exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = handle_unhandled_exception
+
+
 def retrieve_configuration_from_file(file_path: Path):
     '''
     Gets information from the given file, and return an array of strings 
     '''
-    json_file = {}
-    with open(file_path) as raw_file:
-        json_file = json.load(raw_file)
+    try:
+        json_file = {}
+        with open(file_path) as raw_file:
+            json_file = json.load(raw_file)
 
-    # Verify that we have the mandatory field in the configuration file
-    for field in ['output_folder', 'folders_to_backup', 'history_level']:
-        if field not in json_file:
-            raise RuntimeError(
-                '{} is missing from the configuration file'.format(field))
-    output_folder = Path(json_file['output_folder'])
-    history_level = json_file['history_level']
+        # Verify that we have the mandatory field in the configuration file
+        for field in ['output_folder', 'folders_to_backup', 'history_level']:
+            if field not in json_file:
+                raise RuntimeError('{}'.format(field))
+        output_folder = Path(json_file['output_folder'])
+        history_level = json_file['history_level']
 
-    # Build the folders mapping information
-    base_target = output_folder / ROOT_SUBFOLDER
-    folders_to_backup = []
-    for element in json_file['folders_to_backup']:
-        target = base_target / \
-            element['subfolder'] if 'subfolder' in element else base_target
+        # Build the folders mapping information
+        base_target = output_folder / ROOT_SUBFOLDER
+        folders_to_backup = []
+        for element in json_file['folders_to_backup']:
+            target = base_target / \
+                element['subfolder'] if 'subfolder' in element else base_target
 
-        for path in element['folders']:
-            source = Path(path)
-            folders_to_backup.append(
-                {"source": source, "target": Path(target)})
+            for path in element['folders']:
+                source = Path(path)
+                folders_to_backup.append(
+                    {"source": source, "target": Path(target)})
+    except RuntimeError as e:
+        logging.critical(
+            'Missing field {} from the configuration file'.format(e))
+        raise e
+    except json.JSONDecodeError as e:
+        logging.critical(
+            'Error when reading the configuration file: {}'.format(e))
+        raise e
 
     return output_folder, history_level, folders_to_backup
 
@@ -109,6 +135,9 @@ def main():
     '''
     Deals with input arguments and calles process
     '''
+    logging.basicConfig(filename='las_run.log',
+                        filemode='w+', level=logging.DEBUG)
+
     parser = argparse.ArgumentParser(
         description='Synchronizes all folders and files given in a txt file, into the destiny folder')
     parser.add_argument('--file_path', type=Path, default=Path(CONFIGURATION_FILE_PATH),
