@@ -7,11 +7,12 @@ import argparse
 import datetime
 
 from re import search, compile
+
 from dirsync import sync
 from pathlib import Path
 
-CONFIGURATION_FILE_PATH = 'conf.json'
-DATETIME_FORMAT = '%Y%m%dT%H%M%S'
+CONFIGURATION_FILE_PATH = r'conf.json'
+DATETIME_FORMAT = r'%Y%m%dT%H%M%S'
 ROOT_SUBFOLDER = 'backup_{}'.format(
     datetime.datetime.now().replace(microsecond=0).strftime(DATETIME_FORMAT))
 
@@ -79,7 +80,7 @@ def remove_old_backup(output_folder: Path, history_level: int):
     folder_in_output_folder = sorted(
         Path(output_folder).iterdir(), key=os.path.getmtime, reverse=True)
     folder_in_output_folder = [f for f in folder_in_output_folder if search(
-        'backup_\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f.name) is not None]
+        r'backup_\d\d\d\d\d\d\d\dT\d\d\d\d\d\d', f.name) is not None]
 
     while len(folder_in_output_folder) >= history_level:
         # Removing the oldest folder and it's content. Let except so the error is catch by the launcher
@@ -98,7 +99,7 @@ def store_backup(folder_to_backup: list):
         '''
         suffix = ''
         if path.exists():
-            regex = compile(name+'[\(\d+\)]*')
+            regex = compile(name+r'[\(\d+\)]*')
             folders_in_path = [item.stem for item in path.iterdir()]
 
             duplicates = list(filter(regex.match, folders_in_path))
