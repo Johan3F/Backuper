@@ -1,5 +1,6 @@
 import os
 import sys
+import stat
 import json
 import shutil
 import logging
@@ -76,6 +77,11 @@ def remove_old_backup(output_folder: Path, history_level: int):
     '''
     Removes the oldest backups stored in the output folder if there are more that history_level
     '''
+    # Error handler for files that are marked as read-only
+    def on_delete_error(func, path, exc_info):
+        os.chmod(path, stat.S_IWRITE)
+        os.unlink(path)
+
     # Lists all backups and sort then by creation date
     folder_in_output_folder = sorted(
         Path(output_folder).iterdir(), key=os.path.getmtime, reverse=True)
@@ -86,7 +92,7 @@ def remove_old_backup(output_folder: Path, history_level: int):
         # Removing the oldest folder and it's content. Let except so the error is catch by the launcher
         folder_to_remove = folder_in_output_folder.pop()
 
-        shutil.rmtree(folder_to_remove)
+        shutil.rmtree(folder_to_remove, onerror=on_delete_error)
 
 
 def store_backup(folder_to_backup: list):
