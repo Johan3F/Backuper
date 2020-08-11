@@ -27,7 +27,7 @@ def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
         # call the default excepthook saved at __excepthook__
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    logger.critical("Unhandled exception: ", exc_info=(
+    logging.critical("Unhandled exception: ", exc_info=(
         exc_type, exc_value, exc_traceback))
 
 
@@ -144,8 +144,21 @@ def main():
     '''
     Deals with input arguments and calles process
     '''
-    logging.basicConfig(filename='las_run.log',
-                        filemode='w+', level=logging.DEBUG)
+    formatter = logging.Formatter('%(message)s')
+    logging.getLogger('').setLevel(logging.DEBUG)
+
+    fh = logging.FileHandler('las_run.log')
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(formatter)
+    logging.getLogger('').addHandler(fh)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logging.getLogger('').addHandler(ch)
+
+    # logging.basicConfig(filename='las_run.log',
+    #                     filemode='w+', level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(
         description='Synchronizes all folders and files given in a txt file, into the destiny folder')
