@@ -92,6 +92,7 @@ def remove_old_backup(output_folder: Path, history_level: int):
         # Removing the oldest folder and it's content. Let except so the error is catch by the launcher
         folder_to_remove = folder_in_output_folder.pop()
 
+        logging.info('Removing folder {}'.format(folder_to_remove))
         shutil.rmtree(folder_to_remove, onerror=on_delete_error)
 
 
@@ -114,6 +115,7 @@ def store_backup(folder_to_backup: list):
 
         return suffix
 
+    logging.info('Beginning backup')
     for folder in folder_to_backup:
         # If there's a duplicate, add (N) to the target name
         duplicate_sufix = get_duplicate_suffix(
